@@ -1,159 +1,113 @@
 @extends('layouts.app')
 
-@section('title', 'Laporan Peminjaman Alat')
+@section('title', 'Laporan')
 
 @section('content')
-    <div class="flex justify-between items-center mb-6">
-        <h2 class="text-2xl font-bold text-gray-800">Laporan Peminjaman Alat</h2>
-        <a href="{{ route('laporan.cetak', ['tanggal' => $tanggal]) }}" target="_blank" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition">
-            <i class="fas fa-print"></i>
-            <span>Cetak Laporan</span>
-        </a>
-    </div>
 
-    <!-- Filter Tanggal -->
-    <div class="bg-white rounded-lg shadow p-4 mb-6">
-        <form method="GET" action="{{ route('laporan.index') }}" class="flex items-center space-x-4">
-            <div class="flex-1">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Pilih Tanggal</label>
-                <input type="date" name="tanggal" value="{{ $tanggal }}" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-            </div>
-            <div class="pt-6">
-                <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition">
-                    <i class="fas fa-search"></i> Tampilkan
-                </button>
-            </div>
-        </form>
-    </div>
+<div class="mb-6">
+    <h2 class="text-2xl font-bold text-gray-800">Laporan</h2>
+    <p class="text-gray-600 text-sm mt-1">Cetak laporan peminjaman dan pengembalian alat</p>
+</div>
 
-    <!-- Ringkasan Harian -->
-    <div class="bg-white rounded-lg shadow p-6 mb-6">
-        <h3 class="text-xl font-bold text-gray-800 mb-4">
-            Ringkasan Tanggal {{ date('d F Y', strtotime($tanggal)) }}
-        </h3>
-        
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="border-l-4 border-blue-500 pl-4">
-                <p class="text-sm text-gray-600 mb-1">Total Peminjaman</p>
-                <p class="text-3xl font-bold text-blue-600">{{ $totalPeminjamanHariIni }}</p>
+{{-- Menu Cards --}}
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    
+    {{-- Laporan Rekap Periode --}}
+    <a href="{{ route('laporan.rekap') }}" class="block">
+        <div class="bg-white rounded-xl shadow-sm p-6 border-l-4 border-blue-500 hover:shadow-md transition group">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="flex items-center space-x-3 mb-3">
+                        <div class="bg-blue-100 p-3 rounded-full">
+                            <i class="fas fa-calendar-alt text-blue-600 text-2xl"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-gray-800 group-hover:text-blue-600 transition">
+                            Laporan Rekap Periode
+                        </h3>
+                    </div>
+                    <p class="text-sm text-gray-600">
+                        Rekap peminjaman dan pengembalian berdasarkan periode tertentu dengan statistik lengkap
+                    </p>
+                    <div class="mt-4 flex items-center text-blue-600 text-sm font-medium">
+                        <span>Lihat Laporan</span>
+                        <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition"></i>
+                    </div>
+                </div>
             </div>
-            <div class="border-l-4 border-green-500 pl-4">
-                <p class="text-sm text-gray-600 mb-1">Total Pengembalian</p>
-                <p class="text-3xl font-bold text-green-600">{{ $totalPengembalianHariIni }}</p>
+        </div>
+    </a>
+
+    {{-- Info Card --}}
+    <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-sm p-6 text-white">
+        <div class="flex items-start space-x-3">
+            <div class="text-3xl">
+                <i class="fas fa-info-circle"></i>
             </div>
-            <div class="border-l-4 border-red-500 pl-4">
-                <p class="text-sm text-gray-600 mb-1">Total Denda</p>
-                <p class="text-3xl font-bold text-red-600">Rp {{ number_format($totalDendaHariIni, 0, ',', '.') }}</p>
+            <div>
+                <h3 class="text-lg font-bold mb-2">Cara Menggunakan</h3>
+                <ul class="space-y-2 text-sm text-indigo-100">
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle mr-2 mt-1"></i>
+                        <span>Laporan peminjaman & pengembalian bisa dicetak langsung dari halaman detail</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle mr-2 mt-1"></i>
+                        <span>Laporan rekap menampilkan statistik berdasarkan periode yang dipilih</span>
+                    </li>
+                    <li class="flex items-start">
+                        <i class="fas fa-check-circle mr-2 mt-1"></i>
+                        <span>Gunakan tombol print atau Ctrl+P untuk mencetak</span>
+                    </li>
+                </ul>
             </div>
         </div>
     </div>
 
-    <!-- Data Peminjaman Hari Ini -->
-    <div class="bg-white rounded-lg shadow p-6 mb-6">
-        <h3 class="text-xl font-bold text-gray-800 mb-4">Data Peminjaman</h3>
-        
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waktu</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Peminjam</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Alat</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jumlah</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jatuh Tempo</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Petugas</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    @forelse($peminjamanHariIni as $item)
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {{ date('H:i', strtotime($item['tgl_pinjam'])) }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $item['peminjam'] }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ $item['alat'] }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $item['jumlah'] }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                {{ date('d/m/Y', strtotime($item['jatuh_tempo'])) }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                {{ session('username', 'Administrator') }}
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="px-6 py-4 text-center text-gray-500">
-                                Tidak ada peminjaman pada tanggal ini.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+</div>
+
+{{-- Quick Stats --}}
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+    <div class="bg-white rounded-lg shadow-sm p-4 border-l-4 border-green-500">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-600">Peminjaman Bulan Ini</p>
+                <h3 class="text-2xl font-bold text-gray-800">
+                    {{ \App\Models\Peminjaman::whereMonth('tanggal_peminjaman', now()->month)->count() }}
+                </h3>
+            </div>
+            <div class="bg-green-100 p-3 rounded-full">
+                <i class="fas fa-calendar-check text-green-600 text-xl"></i>
+            </div>
         </div>
     </div>
 
-    <!-- Data Pengembalian Hari Ini -->
-    <div class="bg-white rounded-lg shadow p-6">
-        <h3 class="text-xl font-bold text-gray-800 mb-4">Data Pengembalian</h3>
-        
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waktu</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Peminjam</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Alat</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kondisi</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Terlambat</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Denda</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Petugas</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    @forelse($pengembalianHariIni as $item)
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {{ date('H:i', strtotime($item['tgl_kembali'])) }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $item['peminjam'] }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ $item['alat'] }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 py-1 text-xs rounded-full 
-                                    @if($item['kondisi'] == 'Baik') bg-green-100 text-green-800
-                                    @elseif($item['kondisi'] == 'Rusak Ringan') bg-yellow-100 text-yellow-800
-                                    @else bg-red-100 text-red-800
-                                    @endif">
-                                    {{ $item['kondisi'] }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                @if($item['terlambat'] > 0)
-                                    <span class="text-red-600">{{ $item['terlambat'] }} hari</span>
-                                @else
-                                    <span class="text-green-600">Tepat waktu</span>
-                                @endif
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                @if($item['denda'] > 0)
-                                    <span class="text-red-600">Rp {{ number_format($item['denda'], 0, ',', '.') }}</span>
-                                @else
-                                    <span class="text-gray-600">-</span>
-                                @endif
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                {{ session('username', 'Administrator') }}
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="7" class="px-6 py-4 text-center text-gray-500">
-                                Tidak ada pengembalian pada tanggal ini.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+    <div class="bg-white rounded-lg shadow-sm p-4 border-l-4 border-purple-500">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-600">Pengembalian Bulan Ini</p>
+                <h3 class="text-2xl font-bold text-gray-800">
+                    {{ \App\Models\Pengembalian::whereMonth('tanggal_kembali_aktual', now()->month)->where('status_pengembalian', 'approved')->count() }}
+                </h3>
+            </div>
+            <div class="bg-purple-100 p-3 rounded-full">
+                <i class="fas fa-undo text-purple-600 text-xl"></i>
+            </div>
         </div>
     </div>
+
+    <div class="bg-white rounded-lg shadow-sm p-4 border-l-4 border-red-500">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm text-gray-600">Denda Bulan Ini</p>
+                <h3 class="text-xl font-bold text-red-600">
+                    Rp {{ number_format(\App\Models\Pengembalian::whereMonth('tanggal_kembali_aktual', now()->month)->where('status_pengembalian', 'approved')->sum('total_denda'), 0, ',', '.') }}
+                </h3>
+            </div>
+            <div class="bg-red-100 p-3 rounded-full">
+                <i class="fas fa-money-bill-wave text-red-600 text-xl"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endsection
