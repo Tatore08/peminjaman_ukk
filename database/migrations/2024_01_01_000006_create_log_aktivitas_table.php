@@ -19,8 +19,6 @@ return new class extends Migration
                   ->references('user_id')
                   ->on('users')
                   ->onDelete('set null');
-
-            $table->index('user_id', 'idx_log_user');
         });
     }
 

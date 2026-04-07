@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -17,10 +18,10 @@ return new class extends Migration
             $table->text('tujuan_peminjaman')->nullable();
             $table->unsignedInteger('disetujui_oleh')->nullable();
             $table->timestamp('tanggal_disetujui')->nullable();
-            $table->enum('status', ['pending', 'approved', 'rejected', 'returned'])->default('pending');
-            $table->text('catatan')->nullable();
             $table->timestamp('created_at')->useCurrent();
             $table->timestamp('updated_at')->useCurrent()->useCurrentOnUpdate();
+            $table->string('status', 20)->default('pending');
+            $table->text('catatan')->nullable();
 
             $table->foreign('user_id')
                   ->references('user_id')
@@ -36,10 +37,10 @@ return new class extends Migration
                   ->references('user_id')
                   ->on('users')
                   ->onDelete('set null');
-
-            $table->index('user_id', 'idx_peminjaman_user');
-            $table->index('alat_id', 'idx_peminjaman_alat');
         });
+
+        DB::statement("ALTER TABLE peminjaman ADD CONSTRAINT peminjaman_status_check 
+            CHECK (status IN ('pending', 'approved', 'rejected', 'returned'))");
     }
 
     public function down(): void
