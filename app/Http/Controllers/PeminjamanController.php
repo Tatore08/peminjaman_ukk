@@ -122,7 +122,7 @@ class PeminjamanController extends Controller
 
         // Cek lagi apakah alat masih tersedia
         $alat = $peminjaman->alat;
-        if ($alat->status != 'tersedia') {
+        if ($alat->status == 'dipinjam' || $alat->status == 'rusak') {
             return back()->with('error', 'Alat sudah tidak tersedia!');
         }
 

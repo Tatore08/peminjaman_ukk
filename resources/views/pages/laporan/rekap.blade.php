@@ -150,8 +150,8 @@
                         @endif
                     </td>
                     <td class="px-4 py-3 text-sm font-medium">
-                        @if($pg->total_denda > 0)
-                            <span class="text-red-600">Rp {{ number_format($pg->total_denda, 0, ',', '.') }}</span>
+                        @if($pg->getTotalDenda() > 0)
+                            <span class="text-red-600">Rp {{ number_format($pg->getTotalDenda(), 0, ',', '.') }}</span>
                         @else
                             <span class="text-gray-400">-</span>
                         @endif

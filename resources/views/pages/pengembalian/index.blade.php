@@ -102,8 +102,8 @@
                             @endif
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            @if($item->total_denda > 0)
-                                <span class="text-red-600">{{ $item->getDendaFormatted() }}</span>
+                            @if($item->getTotalDenda() > 0)
+                                <span class="text-red-600">{{ $item->getTotalDendaFormatted() }}</span>
                             @else
                                 <span class="text-gray-600">Rp 0</span>
                             @endif
@@ -113,7 +113,7 @@
                             <div class="flex items-center space-x-2">
                                 @if($item->status_pengembalian == 'pending')
                                     {{-- Approve --}}
-                                    <button onclick="openApproveModal({{ $item->pengembalian_id }}, '{{ $item->peminjaman->alat->nama_alat }}', '{{ $item->peminjaman->alat->kode_alat }}', {{ $item->keterlambatan_hari }})" 
+                                    <button onclick="openApproveModal({{ $item->pengembalian_id }}, '{{ $item->peminjaman->alat->nama_alat }}', '{{ $item->peminjaman->alat->kode_alat }}', {{ $item->keterlambatan_hari }}, {{ $item->peminjaman->alat->harga_beli ?? 0 }})" 
                                         class="text-green-600 hover:text-green-900" title="Setujui">
                                         <i class="fas fa-check-circle"></i>
                                     </button>
@@ -127,7 +127,7 @@
                                     </form>
                                 @endif
 
-                                {{-- TOMBOL PRINT ← TAMBAH INI (hanya untuk approved) --}}
+                                {{-- TOMBOL PRINT (hanya untuk approved) --}}
                                 @if($item->status_pengembalian == 'approved' && auth()->user()->level == 'admin')
                                     <a href="{{ route('laporan.pengembalian', $item->pengembalian_id) }}" 
                                     target="_blank"
@@ -246,7 +246,7 @@
     {{-- ================================================ --}}
     @if(auth()->user()->level == 'admin' || auth()->user()->level == 'petugas')
     <div id="modalApprove" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-lg font-bold text-gray-900">Approve Pengembalian</h3>
                 <button onclick="closeModal('approve')" class="text-gray-400 hover:text-gray-600">
@@ -276,22 +276,51 @@
                     <label class="block text-sm font-medium text-gray-700 mb-2">
                         Kondisi Alat <span class="text-red-500">*</span>
                     </label>
-                    <select name="kondisi_alat" required
+                    <select name="kondisi_alat" id="kondisiAlat" required onchange="handleKondisiChange()"
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                         <option value="baik">Baik - Tidak Ada Kerusakan</option>
                         <option value="rusak">Rusak - Ada Kerusakan</option>
                     </select>
                 </div>
 
-                {{-- Total Denda --}}
+                {{-- Persentase Kerusakan (muncul jika rusak) --}}
+                <div id="persenKerusakanDiv" class="hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Persentase Kerusakan (%) <span class="text-red-500">*</span>
+                    </label>
+                    <input type="number" name="persen_kerusakan" id="persenKerusakan" min="0" max="100" value="0"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        placeholder="0-100" oninput="updateDendaKerusakan()">
+                    <p class="text-xs text-gray-500 mt-1">0-100% (denda akan dihitung otomatis berdasarkan harga beli)</p>
+                    <div id="persenInfo" class="text-xs text-blue-600 mt-2 hidden"></div>
+                </div>
+
+                {{-- Denda Keterlambatan --}}
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Total Denda <span class="text-red-500">*</span>
+                        Denda Keterlambatan <span class="text-red-500">*</span>
                     </label>
-                    <input type="number" name="total_denda" min="0" step="1000" value="0" required
+                    <input type="number" name="denda_keterlambatan" id="dendaKeterlambatan" min="0" step="1000" value="0" required
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                        placeholder="0">
-                    <p class="text-xs text-gray-500 mt-1">Masukkan 0 jika tidak ada denda</p>
+                        placeholder="0" onchange="updateTotalDenda()">
+                    <p class="text-xs text-gray-500 mt-1">Denda berdasarkan keterlambatan (Rp 5.000/hari)</p>
+                </div>
+
+                {{-- Denda Kerusakan (Read-Only) --}}
+                <div id="dendaKerusakanDiv" class="hidden">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Denda Kerusakan (Otomatis)
+                    </label>
+                    <input type="number" name="denda_kerusakan" id="dendaKerusakan" min="0" step="1000" value="0" readonly
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-sm cursor-not-allowed">
+                    <p class="text-xs text-gray-500 mt-1" id="rumusDenda"></p>
+                </div>
+
+                {{-- Total Denda (Otomatis) --}}
+                <div class="bg-blue-50 border border-blue-200 p-3 rounded-lg">
+                    <p class="text-sm font-medium text-blue-900">
+                        Total Denda: <span id="totalDendaDisplay" class="text-lg font-bold text-blue-700">Rp 0</span>
+                    </p>
                 </div>
 
                 {{-- Catatan --}}
@@ -338,6 +367,8 @@
 
 
     <script>
+        let hargaBeli = 0; // Simpan harga beli untuk dihitung nanti
+
         function openModal(type) {
             if (type === 'tambah') {
                 document.getElementById('modalTambah').classList.remove('hidden');
@@ -356,17 +387,87 @@
             }
         }
 
-        function openApproveModal(id, namaAlat, kodeAlat, keterlambatan) {
+        function openApproveModal(id, namaAlat, kodeAlat, keterlambatan, hargaBeliAlat) {
             document.getElementById('formApprove').action = '/pengembalian/' + id + '/approve';
             document.getElementById('approve_alat_name').textContent = namaAlat;
             document.getElementById('approve_alat_code').textContent = kodeAlat;
             document.getElementById('approve_keterlambatan').textContent = keterlambatan + ' hari';
             
+            // Simpan harga beli untuk kalkulasi nanti
+            hargaBeli = hargaBeliAlat || 0;
+            
             // Suggest denda berdasarkan keterlambatan (Rp 5.000/hari)
             const suggestedDenda = keterlambatan * 5000;
-            document.querySelector('input[name="total_denda"]').value = suggestedDenda;
+            document.getElementById('dendaKeterlambatan').value = suggestedDenda;
+            document.getElementById('persenKerusakan').value = 0;
+            document.getElementById('dendaKerusakan').value = 0;
+            document.getElementById('kondisiAlat').value = 'baik';
+            document.getElementById('rumusDenda').textContent = '';
+            
+            // Reset display
+            updateTotalDenda();
+            handleKondisiChange();
             
             openModal('approve');
+        }
+
+        function handleKondisiChange() {
+            const kondisi = document.getElementById('kondisiAlat').value;
+            const persenKerusakanDiv = document.getElementById('persenKerusakanDiv');
+            const dendaKerusakanDiv = document.getElementById('dendaKerusakanDiv');
+            
+            if (kondisi === 'rusak') {
+                persenKerusakanDiv.classList.remove('hidden');
+                dendaKerusakanDiv.classList.remove('hidden');
+            } else {
+                persenKerusakanDiv.classList.add('hidden');
+                dendaKerusakanDiv.classList.add('hidden');
+                document.getElementById('persenKerusakan').value = 0;
+                document.getElementById('dendaKerusakan').value = 0;
+                document.getElementById('rumusDenda').textContent = '';
+            }
+            
+            updateTotalDenda();
+        }
+
+        function updateDendaKerusakan() {
+            const persenKerusakan = parseInt(document.getElementById('persenKerusakan').value) || 0;
+            
+            // Validasi 0-100
+            if (persenKerusakan < 0 || persenKerusakan > 100) {
+                alert('Persentase kerusakan harus antara 0-100%');
+                document.getElementById('persenKerusakan').value = 0;
+                updateTotalDenda();
+                return;
+            }
+            
+            // Hitung denda kerusakan (harga_beli * persen / 100)
+            const dendaKerusakan = Math.round((hargaBeli * persenKerusakan) / 100);
+            
+            document.getElementById('dendaKerusakan').value = dendaKerusakan;
+            
+            // Display info rumus
+            const rumusInfo = `Rumus: Rp ${hargaBeli.toLocaleString('id-ID')} × ${persenKerusakan}% = Rp ${dendaKerusakan.toLocaleString('id-ID')}`;
+            document.getElementById('rumusDenda').textContent = rumusInfo;
+            
+            // Display info kerusakan jika >= 70%
+            if (persenKerusakan >= 70) {
+                document.getElementById('persenInfo').textContent = '⚠️ Alat akan di-mark sebagai RUSAK (kerusakan ≥70%)';
+                document.getElementById('persenInfo').classList.remove('hidden');
+            } else {
+                document.getElementById('persenInfo').classList.add('hidden');
+            }
+            
+            updateTotalDenda();
+        }
+
+        function updateTotalDenda() {
+            const dendaKeterlambatan = parseInt(document.getElementById('dendaKeterlambatan').value) || 0;
+            const dendaKerusakan = parseInt(document.getElementById('dendaKerusakan').value) || 0;
+            const totalDenda = dendaKeterlambatan + dendaKerusakan;
+            
+            document.getElementById('totalDendaDisplay').textContent = 
+                'Rp ' + totalDenda.toLocaleString('id-ID');
         }
 
         function showCatatan(catatan) {
@@ -387,34 +488,6 @@
                 openModal('tambah');
             @endif
         @endif
-
-        // Auto-highlight & focus dropdown kalau ada alat yang dipilih dari URL
-        document.addEventListener('DOMContentLoaded', function() {
-            const alatDropdown = document.querySelector('select[name="alat_id"]');
-            const selectedValue = alatDropdown?.value;
-            
-            // Kalau ada alat yang udah ke-select (dari URL parameter)
-            if (selectedValue && selectedValue !== '') {
-                // Flash highlight hijau biar user tau udah dipilih
-                alatDropdown.classList.add('ring-4', 'ring-green-400', 'bg-green-50');
-                
-                // Scroll dropdown ke view
-                alatDropdown.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                
-                // Hapus highlight setelah 3 detik
-                setTimeout(() => {
-                    alatDropdown.classList.remove('ring-4', 'ring-green-400', 'bg-green-50');
-                }, 3000);
-                
-                // Auto-focus ke field tanggal kembali (biar user langsung isi tanggal)
-                const tanggalKembaliInput = document.querySelector('input[name="tanggal_kembali_rencana"]');
-                if (tanggalKembaliInput) {
-                    setTimeout(() => {
-                        tanggalKembaliInput.focus();
-                    }, 800);
-                }
-            }
-        });
     </script>
 
 @endsection

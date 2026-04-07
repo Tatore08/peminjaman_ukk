@@ -229,7 +229,7 @@
                 <td>{{ $pg->peminjaman->alat->kode_alat }}</td>
                 <td>{{ ucfirst($pg->kondisi_alat) }}</td>
                 <td>{{ $pg->keterlambatan_hari > 0 ? $pg->keterlambatan_hari . ' hari' : '-' }}</td>
-                <td style="text-align: right;">{{ $pg->total_denda > 0 ? 'Rp ' . number_format($pg->total_denda, 0, ',', '.') : '-' }}</td>
+                <td style="text-align: right;">{{ $pg->getTotalDenda() > 0 ? 'Rp ' . number_format($pg->getTotalDenda(), 0, ',', '.') : '-' }}</td>
             </tr>
             @empty
             <tr>

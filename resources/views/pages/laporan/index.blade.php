@@ -100,7 +100,7 @@
             <div>
                 <p class="text-sm text-gray-600">Denda Bulan Ini</p>
                 <h3 class="text-xl font-bold text-red-600">
-                    Rp {{ number_format(\App\Models\Pengembalian::whereMonth('tanggal_kembali_aktual', now()->month)->where('status_pengembalian', 'approved')->sum('total_denda'), 0, ',', '.') }}
+                    Rp {{ number_format(\App\Models\Pengembalian::whereMonth('tanggal_kembali_aktual', now()->month)->where('status_pengembalian', 'approved')->get()->sum(fn($p) => $p->getTotalDenda()), 0, ',', '.') }}
                 </h3>
             </div>
             <div class="bg-red-100 p-3 rounded-full">

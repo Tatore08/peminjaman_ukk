@@ -35,6 +35,7 @@ class AlatController extends Controller
                 'tersedia' => $group->where('status', 'tersedia')->count(),
                 'dipinjam' => $group->where('status', 'dipinjam')->count(),
                 'rusak' => $group->where('status', 'rusak')->count(),
+                'pending'    => $group->where('status', 'pending')->count(), // ← TAMBAH INI
                 'units' => $group, // semua unit dalam group ini
             ];
         });
@@ -56,6 +57,7 @@ class AlatController extends Controller
             'deskripsi'   => 'nullable|string',
             'kondisi'     => 'required|in:baik,rusak',
             'lokasi'      => 'nullable|string|max:100',
+            'harga_beli'  => 'required|numeric|min:0',
         ], [
             'kategori_id.required' => 'Kategori harus dipilih',
             'nama_alat.required'   => 'Nama alat harus diisi',
@@ -79,6 +81,7 @@ class AlatController extends Controller
                     'kondisi'     => $request->kondisi,
                     'lokasi'      => $request->lokasi,
                     'status'      => $request->kondisi == 'baik' ? 'tersedia' : 'rusak',
+                    'harga_beli'  => $request->harga_beli ?? 0,
                 ]);
             }
 
@@ -114,7 +117,8 @@ class AlatController extends Controller
             'deskripsi'   => 'nullable|string',
             'kondisi'     => 'required|in:baik,rusak',
             'lokasi'      => 'nullable|string|max:100',
-            'status'      => 'required|in:tersedia,dipinjam,rusak',
+            'status' => 'required|in:tersedia,dipinjam,rusak,pending',
+            'harga_beli'  => 'required|numeric|min:0',
         ]);
 
         $alat->update([
@@ -124,6 +128,7 @@ class AlatController extends Controller
             'kondisi'     => $request->kondisi,
             'lokasi'      => $request->lokasi,
             'status'      => $request->status,
+            'harga_beli'  => $request->harga_beli ?? 0,
         ]);
 
         // LOG AKTIVITAS

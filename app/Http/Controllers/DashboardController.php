@@ -36,8 +36,10 @@ class DashboardController extends Controller
             'pengembalian_pending' => Pengembalian::where('status_pengembalian', 'pending')->count(),
             'pengembalian_total' => Pengembalian::where('status_pengembalian', 'approved')->count(),
             
-            // Denda
-            'total_denda' => Pengembalian::where('status_pengembalian', 'approved')->sum('total_denda'),
+            // Denda (hitung total dari denda_keterlambatan + denda_kerusakan)
+            'total_denda' => Pengembalian::where('status_pengembalian', 'approved')
+                ->selectRaw('SUM(denda_keterlambatan + denda_kerusakan) as total')
+                ->value('total') ?? 0,
             
             // Keterlambatan
             'peminjaman_terlambat' => Peminjaman::where('status', 'approved')

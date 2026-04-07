@@ -21,6 +21,7 @@ class Alat extends Model
         'kondisi',
         'lokasi',
         'status', // tersedia, dipinjam, rusak
+        'harga_beli',  // ← TAMBAH INI
     ];
 
     /**
@@ -42,10 +43,10 @@ class Alat extends Model
     /**
      * Scope: Alat yang tersedia
      */
-    public function scopeTersedia($query)
+   public function scopeTersedia($query)
     {
-        return $query->where('status', 'tersedia')
-                     ->where('kondisi', 'baik');
+        return $query->whereIn('status', ['tersedia'])
+                    ->where('kondisi', 'baik');
     }
 
     /**

@@ -239,20 +239,62 @@
     </div>
 
     {{-- Denda --}}
-    @if($pengembalian->total_denda > 0)
-    <div class="denda-box">
-        <h3>⚠️ DENDA YANG DITERIMA</h3>
-        <div class="denda-amount">Rp {{ number_format($pengembalian->total_denda, 0, ',', '.') }}</div>
-        <p style="margin-top: 10px; font-size: 10pt;">
-            ({{ $pengembalian->keterlambatan_hari }} hari × Rp {{ number_format($pengembalian->total_denda / max($pengembalian->keterlambatan_hari, 1), 0, ',', '.') }})
-        </p>
-    </div>
-    @else
-    <div style="background: #d1fae5; padding: 20px; text-align: center; border: 2px solid #10b981; margin: 20px 0;">
-        <h3 style="color: #065f46; font-size: 14pt;">✓ TIDAK ADA DENDA</h3>
-        <p style="color: #047857; margin-top: 10px;">Alat dikembalikan tepat waktu</p>
-    </div>
-    @endif
+@php $totalDenda = $pengembalian->getTotalDenda(); @endphp
+
+@if($totalDenda > 0)
+<div class="denda-box">
+    <h3>⚠️ RINCIAN DENDA</h3>
+    
+    <table style="width:100%; margin: 15px 0; text-align: left; font-size: 11pt;">
+        {{-- Denda Keterlambatan --}}
+        @if($pengembalian->denda_keterlambatan > 0)
+        <tr>
+            <td style="padding: 5px 0;">Denda Keterlambatan</td>
+            <td style="padding: 5px 0;">:</td>
+            <td style="padding: 5px 0;">
+                {{ $pengembalian->keterlambatan_hari }} hari × Rp 5.000
+            </td>
+            <td style="padding: 5px 0; text-align: right; font-weight: bold;">
+                Rp {{ number_format($pengembalian->denda_keterlambatan, 0, ',', '.') }}
+            </td>
+        </tr>
+        @endif
+
+        {{-- Denda Kerusakan --}}
+        @if($pengembalian->persen_kerusakan > 0)
+        <tr>
+            <td style="padding: 5px 0;">Denda Kerusakan</td>
+            <td style="padding: 5px 0;">:</td>
+            <td style="padding: 5px 0;">
+                {{ $pengembalian->persen_kerusakan }}% × Rp {{ number_format($pengembalian->peminjaman->alat->harga_beli, 0, ',', '.') }}
+            </td>
+            <td style="padding: 5px 0; text-align: right; font-weight: bold;">
+                Rp {{ number_format($pengembalian->denda_kerusakan, 0, ',', '.') }}
+            </td>
+        </tr>
+        @endif
+
+        {{-- Garis pemisah --}}
+        <tr>
+            <td colspan="4" style="border-top: 2px solid #991b1b; padding-top: 8px;"></td>
+        </tr>
+
+        {{-- Total --}}
+        <tr>
+            <td colspan="3" style="padding: 5px 0; font-weight: bold; font-size: 13pt;">TOTAL DENDA</td>
+            <td style="padding: 5px 0; text-align: right;">
+                <div class="denda-amount">Rp {{ number_format($totalDenda, 0, ',', '.') }}</div>
+            </td>
+        </tr>
+    </table>
+</div>
+
+@else
+<div style="background: #d1fae5; padding: 20px; text-align: center; border: 2px solid #10b981; margin: 20px 0;">
+    <h3 style="color: #065f46; font-size: 14pt;">✓ TIDAK ADA DENDA</h3>
+    <p style="color: #047857; margin-top: 10px;">Alat dikembalikan tepat waktu dan dalam kondisi baik</p>
+</div>
+@endif
 
     {{-- Tanda Tangan --}}
     <div class="signature">

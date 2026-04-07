@@ -49,6 +49,7 @@
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tersedia</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dipinjam</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rusak</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pending</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
                 </tr>
             </thead>
@@ -84,6 +85,11 @@
                                 {{ $group['rusak'] }}
                             </span>
                         </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                {{ $group['pending'] ?? 0 }}
+                            </span>
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
                             <span class="text-gray-400 text-xs">Klik untuk lihat unit</span>
                         </td>
@@ -103,6 +109,8 @@
                                                     <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">Tersedia</span>
                                                 @elseif($unit->status == 'dipinjam')
                                                     <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700">Dipinjam</span>
+                                                @elseif($unit->status == 'pending')
+                                                    <span class="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-700">Pending</span>
                                                 @else
                                                     <span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-700">Rusak</span>
                                                 @endif
@@ -125,7 +133,7 @@
                                                     @endif
                                                     {{-- TOMBOL EDIT & HAPUS (Admin/Petugas only) --}}
                                                     @if(auth()->user()->level == 'admin' || auth()->user()->level == 'petugas')
-                                                        <button onclick="editUnit({{ $unit->alat_id }}, '{{ $unit->kategori_id }}', '{{ $unit->nama_alat }}', '{{ $unit->kode_alat }}', '{{ $unit->kondisi }}', '{{ $unit->lokasi }}', '{{ $unit->status }}')" 
+                                                        <button onclick="editUnit({{ $unit->alat_id }}, '{{ $unit->kategori_id }}', '{{ $unit->nama_alat }}', '{{ $unit->kode_alat }}', '{{ $unit->kondisi }}', '{{ $unit->lokasi }}', '{{ $unit->status }}', {{ $unit->harga_beli ?? 0 }})" 
                                                             class="text-blue-600 hover:text-blue-900 text-xs" title="Edit">
                                                             <i class="fas fa-edit"></i> Edit
                                                         </button>
@@ -241,6 +249,20 @@
                         placeholder="Contoh: Lab 1">
                 </div>
 
+                {{-- Harga Beli --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Harga Beli <span class="text-red-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-2 text-gray-500 text-sm">Rp</span>
+                        <input type="number" name="harga_beli" min="0" step="1000" required
+                            class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                            placeholder="0">
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Harga beli per unit (untuk kalkulasi denda kerusakan)</p>
+                </div>
+
                 {{-- Tombol --}}
                 <div class="flex space-x-2 pt-2">
                     <button type="submit"
@@ -316,6 +338,7 @@
                         <option value="tersedia">Tersedia</option>
                         <option value="dipinjam">Dipinjam</option>
                         <option value="rusak">Rusak</option>
+                        <option value="pending">Pending</option> {{-- ← TAMBAH INI --}}
                     </select>
                 </div>
 
@@ -324,6 +347,16 @@
                     <label class="block text-sm font-medium text-gray-700 mb-2">Lokasi</label>
                     <input type="text" name="lokasi" id="edit_lokasi"
                         class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+
+                {{-- Harga Beli --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Harga Beli</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-2 text-gray-500 text-sm">Rp</span>
+                        <input type="number" name="harga_beli" id="edit_harga_beli" min="0" step="1000" required
+                            class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                    </div>
                 </div>
 
                 {{-- Tombol --}}
@@ -358,7 +391,7 @@
         }
 
         // Edit unit
-        function editUnit(id, kategori_id, nama_alat, kode_alat, kondisi, lokasi, status) {
+        function editUnit(id, kategori_id, nama_alat, kode_alat, kondisi, lokasi, status,  harga_beli) {
             document.getElementById('formEdit').action = '/alat/' + id;
             document.getElementById('edit_kode_alat').value = kode_alat;
             document.getElementById('edit_nama_alat').value = nama_alat;
@@ -366,6 +399,7 @@
             document.getElementById('edit_kondisi').value = kondisi;
             document.getElementById('edit_lokasi').value = lokasi || '';
             document.getElementById('edit_status').value = status;
+            document.getElementById('edit_harga_beli').value = harga_beli || 0;
             
             openModal('edit');
         }

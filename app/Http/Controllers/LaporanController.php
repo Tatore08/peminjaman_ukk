@@ -60,7 +60,7 @@ class LaporanController extends Controller
             ->where('status_pengembalian', 'approved')
             ->get();
 
-        // Statistik
+        // Statistik (hitung total denda dari denda_keterlambatan + denda_kerusakan)
         $stats = [
             'total_peminjaman' => $peminjaman->count(),
             'total_approved' => $peminjaman->where('status', 'approved')->count(),
@@ -68,7 +68,9 @@ class LaporanController extends Controller
             'total_rejected' => $peminjaman->where('status', 'rejected')->count(),
             'total_returned' => $peminjaman->where('status', 'returned')->count(),
             'total_pengembalian' => $pengembalian->count(),
-            'total_denda' => $pengembalian->sum('total_denda'),
+            'total_denda' => $pengembalian->sum(function($item) {
+                return ($item->denda_keterlambatan ?? 0) + ($item->denda_kerusakan ?? 0);
+            }),
             'total_terlambat' => $pengembalian->where('keterlambatan_hari', '>', 0)->count(),
         ];
 
@@ -95,7 +97,7 @@ class LaporanController extends Controller
             ->where('status_pengembalian', 'approved')
             ->get();
 
-        // Statistik
+        // Statistik (hitung total denda dari denda_keterlambatan + denda_kerusakan)
         $stats = [
             'total_peminjaman' => $peminjaman->count(),
             'total_approved' => $peminjaman->where('status', 'approved')->count(),
@@ -103,7 +105,9 @@ class LaporanController extends Controller
             'total_rejected' => $peminjaman->where('status', 'rejected')->count(),
             'total_returned' => $peminjaman->where('status', 'returned')->count(),
             'total_pengembalian' => $pengembalian->count(),
-            'total_denda' => $pengembalian->sum('total_denda'),
+            'total_denda' => $pengembalian->sum(function($item) {
+                return ($item->denda_keterlambatan ?? 0) + ($item->denda_kerusakan ?? 0);
+            }),
             'total_terlambat' => $pengembalian->where('keterlambatan_hari', '>', 0)->count(),
         ];
 

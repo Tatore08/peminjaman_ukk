@@ -1,26 +1,33 @@
 <?php
+
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema;\n\nclass AddHargaBeliAndModifyPengembalian extends Migration
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
 {
-    public function up()
+    public function up(): void
     {
-        Schema::table('alat', function ($table) {
-            $table->decimal('harga_beli', 10, 2)->nullable();
+        Schema::table('alat', function (Blueprint $table) {
+            $table->decimal('harga_beli', 12, 2)->default(0);
         });
-\n        Schema::table('pengembalian', function ($table) {
+
+        Schema::table('pengembalian', function (Blueprint $table) {
             $table->renameColumn('total_denda', 'denda_keterlambatan');
-            $table->decimal('persen_kerusakan', 5, 2)->nullable();
-            $table->decimal('denda_kerusakan', 10, 2)->nullable();
+            $table->integer('persen_kerusakan')->default(0);
+            $table->decimal('denda_kerusakan', 12, 2)->default(0);
         });
     }
-\n    public function down()
+
+    public function down(): void
     {
-        Schema::table('alat', function ($table) {
+        Schema::table('alat', function (Blueprint $table) {
             $table->dropColumn('harga_beli');
         });
-\n        Schema::table('pengembalian', function ($table) {
+
+        Schema::table('pengembalian', function (Blueprint $table) {
             $table->renameColumn('denda_keterlambatan', 'total_denda');
             $table->dropColumn(['persen_kerusakan', 'denda_kerusakan']);
         });
     }
-}
+};

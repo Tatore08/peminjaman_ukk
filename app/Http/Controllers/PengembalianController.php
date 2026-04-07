@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Pengembalian;
 use App\Models\Peminjaman;
-use App\Models\LogAktivitas;  // ← TAMBAH INI
+use App\Models\LogAktivitas;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -82,13 +82,15 @@ class PengembalianController extends Controller
 
         // Buat pengembalian dengan status pending
         Pengembalian::create([
-            'peminjaman_id'          => $request->peminjaman_id,
-            'tanggal_kembali_aktual' => $tanggalKembali->toDateString(),
-            'kondisi_alat'           => 'baik', // default, nanti petugas yang ubah
-            'keterlambatan_hari'     => $keterlambatan,
-            'total_denda'            => 0, // nanti petugas yang input manual
-            'status_pengembalian'    => 'pending',
-            'catatan'                => null, // nanti petugas yang isi
+            'peminjaman_id'              => $request->peminjaman_id,
+            'tanggal_kembali_aktual'     => $tanggalKembali->toDateString(),
+            'kondisi_alat'               => 'baik', // default, nanti petugas yang ubah
+            'keterlambatan_hari'         => $keterlambatan,
+            'denda_keterlambatan'        => 0, // nanti petugas yang input manual
+            'persen_kerusakan'           => 0, // default 0%
+            'denda_kerusakan'            => 0, // akan dihitung nanti
+            'status_pengembalian'        => 'pending',
+            'catatan'                    => null, // nanti petugas yang isi
         ]);
 
         // LOG AKTIVITAS
@@ -103,45 +105,69 @@ class PengembalianController extends Controller
     }
 
     /**
-     * Petugas approve pengembalian (input denda + catatan + kondisi)
+     * Petugas approve pengembalian (input denda + catatan + kondisi + kerusakan)
      */
     public function approve(Request $request, $id)
     {
-        $pengembalian = Pengembalian::findOrFail($id);
+        $pengembalian = Pengembalian::with('peminjaman.alat')->findOrFail($id);
 
         if ($pengembalian->status_pengembalian != 'pending') {
             return back()->with('error', 'Pengembalian sudah diproses!');
         }
 
         $request->validate([
-            'kondisi_alat' => 'required|in:baik,rusak',
-            'total_denda'  => 'required|numeric|min:0',
-            'catatan'      => 'nullable|string',
+            'kondisi_alat'        => 'required|in:baik,rusak',
+            'denda_keterlambatan' => 'required|numeric|min:0',
+            'persen_kerusakan'    => 'nullable|integer|min:0|max:100',
+            'denda_kerusakan'     => 'nullable|numeric|min:0',
+            'catatan'             => 'nullable|string',
         ], [
-            'kondisi_alat.required' => 'Kondisi alat harus dipilih',
-            'total_denda.required'  => 'Denda harus diisi',
-            'total_denda.min'       => 'Denda minimal 0',
+            'kondisi_alat.required'        => 'Kondisi alat harus dipilih',
+            'denda_keterlambatan.required' => 'Denda keterlambatan harus diisi',
+            'denda_keterlambatan.min'      => 'Denda minimal 0',
+            'persen_kerusakan.max'         => 'Persentase kerusakan maksimal 100%',
         ]);
 
         DB::beginTransaction();
         try {
+            // Ambil nilai dari request
+            $persenKerusakan = $request->persen_kerusakan ?? 0;
+            $dendaKerusakan = $request->denda_kerusakan ?? 0;
+            $dendaKeterlambatan = $request->denda_keterlambatan;
+
+            // Jika kondisi rusak, validasi dan hitung ulang denda kerusakan jika belum sesuai
+            if ($request->kondisi_alat == 'rusak' && $persenKerusakan > 0) {
+                $hargaBeli = $pengembalian->peminjaman->alat->harga_beli ?? 0;
+                
+                // Hitung denda kerusakan: (harga_beli * persen / 100)
+                $dendaKerusakanHitung = ($hargaBeli * $persenKerusakan) / 100;
+                
+                // Bulatkan ke ribuan terdekat
+                $dendaKerusakan = round($dendaKerusakanHitung / 1000) * 1000;
+            }
+
             // Update pengembalian dengan data dari petugas
             $pengembalian->update([
                 'kondisi_alat'        => $request->kondisi_alat,
-                'total_denda'         => $request->total_denda,
+                'denda_keterlambatan' => $dendaKeterlambatan,
+                'persen_kerusakan'    => $persenKerusakan,
+                'denda_kerusakan'     => $dendaKerusakan,
                 'catatan'             => $request->catatan,
                 'status_pengembalian' => 'approved', // Trigger akan update status peminjaman & alat
             ]);
 
             // LOG AKTIVITAS
-            $dendaText = $request->total_denda > 0 
-                ? 'dengan denda Rp ' . number_format($request->total_denda, 0, ',', '.')
+            $totalDenda = $dendaKeterlambatan + $dendaKerusakan;
+            $dendaText = $totalDenda > 0 
+                ? 'dengan denda Rp ' . number_format($totalDenda, 0, ',', '.')
                 : 'tanpa denda';
+            
+            $kerusakanText = $persenKerusakan > 0 ? " ({$persenKerusakan}% rusak)" : '';
             
             LogAktivitas::create([
                 'user_id' => Auth::id(),
                 'modul' => 'Pengembalian',
-                'aktivitas' => "Menyetujui pengembalian #{$pengembalian->pengembalian_id} - {$pengembalian->peminjaman->alat->nama_alat} {$dendaText}, kondisi: {$request->kondisi_alat}",
+                'aktivitas' => "Menyetujui pengembalian #{$pengembalian->pengembalian_id} - {$pengembalian->peminjaman->alat->nama_alat} {$dendaText}, kondisi: {$request->kondisi_alat}{$kerusakanText}",
             ]);
 
             DB::commit();
